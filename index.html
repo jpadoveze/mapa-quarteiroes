@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa de Quarteirões – ACE</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="toolbar">
+  <input id="busca" type="number" placeholder="Digite o quarteirão" />
+  <button onclick="buscarQuarteirao()">Buscar</button>
+</div>
+
+<!-- Botão do menu -->
+<div class="btn-menu" onclick="toggleMenu()">☰</div>
+
+<!-- Menu de opções -->
+<div id="menu-opcoes" class="menu-opcoes hidden">
+  <h3>Camadas</h3>
+
+  <label class="menu-opcao">
+    <input type="checkbox" id="chk-quarteiroes" checked onchange="toggleQuarteiroes()">
+    Quarteirões
+  </label>
+
+  <label class="menu-opcao">
+    <input type="checkbox" id="chk-censitario" checked onchange="toggleCensitario()">
+    Setor censitário
+  </label>
+</div>
+
+
+<div class="btn-localizacao" onclick="minhaLocalizacao()">📍</div>
+
+<div id="map"></div>
+
+<!-- JS -->
+<script src="js/mapa.js"></script>
+
+</body>
+</html>
