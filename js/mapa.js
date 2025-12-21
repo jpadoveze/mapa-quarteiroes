@@ -155,7 +155,13 @@ function buscarQuarteirao() {
   });
 
   if (!encontrado) {
-    alert('Quarteirão não encontrado');
+    const input = document.getElementById('busca');
+    input.classList.add('erro');
+    mostrarToast('Quarteirão não encontrado');
+
+    setTimeout(() => {
+      input.classList.remove('erro');
+    }, 1500);
   }
 }
 
@@ -164,6 +170,10 @@ document.getElementById('busca').addEventListener('keydown', e => {
 });
 
 let marcadorLocalizacao = null;
+
+document.getElementById('busca').addEventListener('input', () => {
+  document.getElementById('busca').classList.remove('erro');
+});
 
 function minhaLocalizacao() {
   if (!navigator.geolocation) return;
@@ -188,8 +198,13 @@ function minhaLocalizacao() {
 
 function toggleMenu() {
   const menu = document.getElementById('menu-opcoes');
-  menu.classList.toggle('hidden');
+  const botao = document.querySelector('.btn-opcoes');
+
+  const aberto = menu.classList.toggle('hidden') === false;
+
+  botao.classList.toggle('ativo', aberto);
 }
+
 
 function toggleQuarteiroes() {
   const chk = document.getElementById('chk-quarteiroes');
@@ -221,4 +236,38 @@ function toggleCensitario() {
     map.removeLayer(grupoRotulosCensitario);
   }
 }
+// ===== Cria toast reutilizável =====
+function mostrarToast(mensagem) {
+  let toast = document.getElementById('toast');
 
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = mensagem;
+  toast.classList.add('mostrar');
+
+  setTimeout(() => {
+    toast.classList.remove('mostrar');
+  }, 2000);
+}
+
+// ===== FECHAR MENU AO CLICAR FORA =====
+
+document.addEventListener('click', function (e) {
+  const menu = document.getElementById('menu-opcoes');
+  const botao = document.querySelector('.btn-opcoes');
+
+  // Se o menu estiver fechado, não faz nada
+  if (menu.classList.contains('hidden')) return;
+
+  // Se clicou dentro do menu ou no botão, não fecha
+  if (menu.contains(e.target) || botao.contains(e.target)) return;
+
+  // Caso contrário, fecha o menu
+  menu.classList.add('hidden');
+  botao.classList.remove('ativo');
+});
