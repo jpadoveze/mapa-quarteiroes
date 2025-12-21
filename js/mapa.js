@@ -1,4 +1,4 @@
-const map = L.map('map').setView([-21.9032, -50.5972], 16);
+const map = L.map('map').setView([-21.933306, -50.516389], 16);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
@@ -20,9 +20,13 @@ const estiloSelecionado = {
 
 const estiloCensitario = {
   color: '#FFD700',
-  weight: 2,
+  weight: 5,
   fillOpacity: 0
 };
+
+const ZOOM_ROTULOS_QUARTEIROES = 16;
+const ZOOM_ROTULOS_CENSITARIO = 15;
+
 
 /* ===== CAMADAS ===== */
 
@@ -67,21 +71,23 @@ fetch('censitario.geojson')
   .then(data => {
     camadaCensitaria = L.geoJSON(data, {
       style: estiloCensitario,
-      onEachFeature: (feature, layer) => {
-        const codigo = feature.properties.CD_GEOCODI;
+        onEachFeature: (feature, layer) => {
+          if (!feature.properties.CD_GEOCODI) return;
 
-        if (!codigo) return;
+          const codigoCompleto = String(feature.properties.CD_GEOCODI);
+          const codigo = codigoCompleto.slice(-4);
 
-        const centro = layer.getBounds().getCenter();
-        const rotulo = L.marker(centro, {
-          icon: L.divIcon({
-            className: 'rotulo-quarteirao',
-            html: codigo
-          })
+          const centro = layer.getBounds().getCenter();
+          const rotulo = L.marker(centro, {
+            icon: L.divIcon({
+              className: 'rotulo-censitario',
+              html: codigo
+            })
         });
 
-        grupoRotulosCensitario.addLayer(rotulo);
-      }
+  grupoRotulosCensitario.addLayer(rotulo);
+}
+
     }).addTo(map);
 
     camadaQuarteiroes.bringToFront();
@@ -90,24 +96,29 @@ fetch('censitario.geojson')
 /* ===== CONTROLE DE ZOOM DOS RÓTULOS ===== */
 
 function atualizarVisibilidadeRotulos() {
-  if (map.getZoom() < 16) {
-    map.removeLayer(grupoRotulos);
-    map.removeLayer(grupoRotulosCensitario);
-    return;
-  }
+  const zoom = map.getZoom();
 
-  if (map.hasLayer(camadaQuarteiroes)) {
+  // Quarteirões
+  if (
+    zoom >= ZOOM_ROTULOS_QUARTEIROES &&
+    map.hasLayer(camadaQuarteiroes)
+  ) {
     map.addLayer(grupoRotulos);
   } else {
     map.removeLayer(grupoRotulos);
   }
 
-  if (map.hasLayer(camadaCensitaria)) {
+  // Censitário
+  if (
+    zoom >= ZOOM_ROTULOS_CENSITARIO &&
+    map.hasLayer(camadaCensitaria)
+  ) {
     map.addLayer(grupoRotulosCensitario);
   } else {
     map.removeLayer(grupoRotulosCensitario);
   }
 }
+
 
 
 map.on('zoomend', atualizarVisibilidadeRotulos);
