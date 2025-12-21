@@ -1,4 +1,11 @@
-const map = L.map('map').setView([-21.933306, -50.516389], 16);
+const map = L.map('map', {
+  zoomControl: false
+}).setView([-21.9032, -50.5972], 16);
+
+L.control.zoom({
+  position: 'topleft'
+}).addTo(map);
+
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
@@ -19,7 +26,7 @@ const estiloSelecionado = {
 };
 
 const estiloCensitario = {
-  color: '#FFD700',
+  color: '#d97706',
   weight: 5,
   fillOpacity: 0
 };

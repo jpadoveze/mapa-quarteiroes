@@ -9,28 +9,57 @@ html, body {
 
 .toolbar {
   position: absolute;
-  top: 10px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  background: white;
-  padding: 6px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  display: flex;
-  gap: 6px;
+  pointer-events: auto;
 }
 
+
 .toolbar input {
-  width: 180px;
-  padding: 6px;
-  font-size: 14px;
+  width: 260px;
+  padding: 10px 14px;
+  font-size: 15px;
+  border-radius: 24px; /* estilo Google Maps */
+  border: none;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 .toolbar button {
   padding: 6px 10px;
   font-size: 14px;
   cursor: pointer;
+}
+
+.leaflet-top.leaflet-left {
+  top: 12px;
+  left: 12px;
+}
+
+.leaflet-control-zoom {
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.btn-opcoes {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  background: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 .btn-localizacao {
@@ -76,35 +105,7 @@ html, body {
   pointer-events: none;
 }
 
-@media (max-width: 600px) {
-  .toolbar {
-    top: auto;
-    bottom: 80px;
-  }
-
-  .toolbar input {
-    width: 140px;
-  }
-}
-
 /* ===== MENU DE OPÇÕES ===== */
-
-.btn-menu {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 1100;
-  background: white;
-  border-radius: 8px;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
 
 .menu-opcoes {
   position: absolute;
@@ -148,4 +149,22 @@ html, body {
 /* Estado oculto */
 .hidden {
   display: none;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .toolbar input {
+    width: 75vw;
+  }
+}
+
+@media (max-width: 600px) {
+  .leaflet-top.leaflet-left {
+    left: 8px;
+  }
+
+  .btn-opcoes {
+    left: auto;
+    right: 8px;
+  }
 }
