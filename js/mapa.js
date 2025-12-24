@@ -1,6 +1,6 @@
 const map = L.map('map', {
   zoomControl: false
-}).setView([-21.9032, -50.5972], 16);
+}).setView([-21.9348, -50.5136], 16);
 
 L.control.zoom({
   position: 'topleft'
@@ -10,6 +10,7 @@ L.control.zoom({
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
 }).addTo(map);
+
 
 /* ===== ESTILOS ===== */
 
@@ -97,7 +98,7 @@ fetch('censitario.geojson')
 
     }).addTo(map);
 
-    camadaQuarteiroes.bringToFront();
+    camadaQuarteiroes?.bringToFront();
   });
 
 /* ===== CONTROLE DE ZOOM DOS RÓTULOS ===== */
@@ -141,9 +142,15 @@ function selecionar(layer) {
   map.fitBounds(layer.getBounds());
 }
 
-function buscarQuarteirao() {
-  const valor = document.getElementById('busca').value;
-  if (!valor || !camadaQuarteiroes) return;
+function buscar() {
+  const valor = document.getElementById('busca').value.trim();
+  if (!valor) return;
+
+  if (!/^\d+$/.test(valor)) {
+    mostrarToast('Digite apenas o número do quarteirão');
+    destacarBuscaInvalida();
+    return;
+  }
 
   let encontrado = false;
 
@@ -155,25 +162,23 @@ function buscarQuarteirao() {
   });
 
   if (!encontrado) {
-    const input = document.getElementById('busca');
-    input.classList.add('erro');
     mostrarToast('Quarteirão não encontrado');
-
-    setTimeout(() => {
-      input.classList.remove('erro');
-    }, 1500);
+    destacarBuscaInvalida();
   }
 }
 
+
 document.getElementById('busca').addEventListener('keydown', e => {
-  if (e.key === 'Enter') buscarQuarteirao();
+  if (e.key === 'Enter') buscar();
 });
+
+document.getElementById('busca').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g, '');
+});
+
 
 let marcadorLocalizacao = null;
 
-document.getElementById('busca').addEventListener('input', () => {
-  document.getElementById('busca').classList.remove('erro');
-});
 
 function minhaLocalizacao() {
   if (!navigator.geolocation) return;
@@ -213,7 +218,7 @@ function toggleQuarteiroes() {
 
   if (chk.checked) {
     map.addLayer(camadaQuarteiroes);
-    camadaQuarteiroes.bringToFront();
+    camadaQuarteiroes?.bringToFront();
     atualizarVisibilidadeRotulos();
   } else {
     map.removeLayer(camadaQuarteiroes);
@@ -271,3 +276,13 @@ document.addEventListener('click', function (e) {
   menu.classList.add('hidden');
   botao.classList.remove('ativo');
 });
+
+function destacarBuscaInvalida() {
+  const input = document.getElementById('busca');
+
+  input.classList.add('erro');
+
+  setTimeout(() => {
+    input.classList.remove('erro');
+  }, 1500);
+}

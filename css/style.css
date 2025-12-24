@@ -14,6 +14,7 @@ html, body {
   transform: translateX(-50%);
   z-index: 1000;
   pointer-events: auto;
+  
 }
 
 
@@ -178,8 +179,10 @@ html, body {
 /* ===== BUSCA – ESTADO DE ERRO ===== */
 
 .toolbar input.erro {
-  border: 2px solid #dc2626; /* vermelho */
+  border: 2px solid #dc2626;
+  animation: shake 0.3s;
 }
+
 
 .toast {
   position: absolute;
@@ -201,3 +204,4 @@ html, body {
 .toast.mostrar {
   opacity: 1;
 }
+
