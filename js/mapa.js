@@ -21,9 +21,10 @@ const estiloPadrao = {
 };
 
 const estiloSelecionado = {
-  color: '#4da3ff',
-  weight: 3,
-  fillOpacity: 0
+  color: '#22d3ee',
+  weight: 6,
+  fillOpacity: 0.08,
+  fillColor: '#22d3ee'
 };
 
 const estiloCensitario = {
@@ -41,6 +42,7 @@ const ZOOM_ROTULOS_CENSITARIO = 15;
 let camadaQuarteiroes;
 let camadaCensitaria;
 let quarteiraoSelecionado = null;
+let censitarioSelecionado = null;
 
 const grupoRotulos = L.layerGroup().addTo(map);
 const grupoRotulosCensitario = L.layerGroup().addTo(map);
@@ -83,7 +85,7 @@ fetch('censitario.geojson')
           if (!feature.properties.CD_GEOCODI) return;
 
           const codigoCompleto = String(feature.properties.CD_GEOCODI);
-          const codigo = codigoCompleto.slice(-4);
+          const codigo = codigoCompleto.slice(-3);
 
           const centro = layer.getBounds().getCenter();
           const rotulo = L.marker(centro, {
@@ -131,7 +133,25 @@ function atualizarVisibilidadeRotulos() {
 
 map.on('zoomend', atualizarVisibilidadeRotulos);
 
+map.on('click', () => {
+  limparSelecaoCensitario();
+
+  if (quarteiraoSelecionado) {
+    quarteiraoSelecionado.setStyle(estiloPadrao);
+    quarteiraoSelecionado = null;
+  }
+});
+
+
 /* ===== FUNÇÕES ===== */
+
+function limparSelecaoCensitario() {
+  if (censitarioSelecionado) {
+    censitarioSelecionado.setStyle(estiloCensitario);
+    censitarioSelecionado = null;
+  }
+}
+
 
 function selecionar(layer) {
   if (quarteiraoSelecionado) {
@@ -143,6 +163,16 @@ function selecionar(layer) {
 }
 
 function buscar() {
+  const tipo = document.querySelector('input[name="tipo-busca"]:checked').value;
+
+  if (tipo === 'quarteirao') {
+    buscarQuarteirao();
+  } else {
+    buscarCensitario();
+  }
+}
+
+function buscarQuarteirao() {
   const valor = document.getElementById('busca').value.trim();
   if (!valor) return;
 
@@ -168,12 +198,68 @@ function buscar() {
 }
 
 
+function buscarCensitario() {
+  const valor = document.getElementById('busca').value.trim();
+  if (!valor) return;
+
+  if (!/^\d+$/.test(valor)) {
+    mostrarToast('Digite apenas números');
+    destacarBuscaInvalida();
+    return;
+  }
+
+  limparSelecaoCensitario();
+
+  let encontrado = false;
+
+  camadaCensitaria.eachLayer(layer => {
+    const codigoCompleto = String(layer.feature.properties.CD_GEOCODI);
+    const codigo = codigoCompleto.slice(-3);
+
+    if (codigo === valor) {
+      layer.setStyle(estiloSelecionado);
+      censitarioSelecionado = layer; // 🔴 agora funciona
+      map.fitBounds(layer.getBounds());
+      encontrado = true;
+    }
+  });
+
+  if (!encontrado) {
+    mostrarToast('Setor censitário não encontrado');
+    destacarBuscaInvalida();
+  }
+}
+
+
 document.getElementById('busca').addEventListener('keydown', e => {
   if (e.key === 'Enter') buscar();
 });
 
 document.getElementById('busca').addEventListener('input', e => {
   e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+document.querySelectorAll('input[name="tipo-busca"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const tipo = document.querySelector('input[name="tipo-busca"]:checked').value;
+    const input = document.getElementById('busca');
+
+    // Limpa campo e placeholder
+    input.value = '';
+    input.placeholder =
+      tipo === 'quarteirao'
+        ? 'Buscar quarteirão'
+        : 'Buscar setor censitário';
+
+    // 🔹 Limpa seleção do censitário
+    limparSelecaoCensitario();
+
+    // 🔹 Limpa seleção do quarteirão
+    if (quarteiraoSelecionado) {
+      quarteiraoSelecionado.setStyle(estiloPadrao);
+      quarteiraoSelecionado = null;
+    }
+  });
 });
 
 
