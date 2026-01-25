@@ -14,6 +14,17 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
 }).addTo(map);
 
+let rotacionando = false;
+
+map.on('rotatestart', () => {
+  rotacionando = true;
+  ocultarCamadas();
+});
+
+map.on('rotateend', () => {
+  rotacionando = false;
+  mostrarCamadas();
+});
 
 /* ===== ESTILOS ===== */
 
@@ -96,15 +107,38 @@ fetch('censitario.geojson')
               className: 'rotulo-censitario',
               html: codigo
             })
-        });
+          });
 
-  grupoRotulosCensitario.addLayer(rotulo);
-}
+          grupoRotulosCensitario.addLayer(rotulo);
+        }
 
     }).addTo(map);
 
     camadaQuarteiroes?.bringToFront();
   });
+
+function ocultarCamadas() {
+  document.body.classList.add('rotacionando');
+  if (camadaQuarteiroes) map.removeLayer(camadaQuarteiroes);
+  if (camadaCensitaria) map.removeLayer(camadaCensitaria);
+  map.removeLayer(grupoRotulos);
+  map.removeLayer(grupoRotulosCensitario);
+}
+
+function mostrarCamadas() {
+  document.body.classList.remove('rotacionando');
+  if (document.getElementById('chk-quarteiroes').checked) {
+    map.addLayer(camadaQuarteiroes);
+    camadaQuarteiroes?.bringToFront();
+  }
+
+  if (document.getElementById('chk-censitario').checked) {
+    map.addLayer(camadaCensitaria);
+  }
+
+  atualizarVisibilidadeRotulos();
+}
+
 
 /* ===== CONTROLE DE ZOOM DOS RÓTULOS ===== */
 
