@@ -1,5 +1,8 @@
 const map = L.map('map', {
-  zoomControl: false
+  zoomControl: false,
+  rotate: true,
+  touchRotate: true,
+  bearing: 0
 }).setView([-21.9348, -50.5136], 16);
 
 L.control.zoom({
@@ -129,8 +132,6 @@ function atualizarVisibilidadeRotulos() {
   }
 }
 
-
-
 map.on('zoomend', atualizarVisibilidadeRotulos);
 
 map.on('click', () => {
@@ -160,6 +161,7 @@ function selecionar(layer) {
   layer.setStyle(estiloSelecionado);
   quarteiraoSelecionado = layer;
   map.fitBounds(layer.getBounds());
+  map.setBearing(0);
 }
 
 function buscar() {
@@ -230,6 +232,15 @@ function buscarCensitario() {
   }
 }
 
+// Rotacionar
+let anguloAtual = 0;
+
+function rotacionarMapa() {
+  anguloAtual += 30;
+  if (anguloAtual >= 360) anguloAtual = 0;
+
+  map.setBearing(anguloAtual);
+}
 
 document.getElementById('busca').addEventListener('keydown', e => {
   if (e.key === 'Enter') buscar();
@@ -285,6 +296,7 @@ function minhaLocalizacao() {
       }
     });
   });
+  map.setBearing(0);
 }
 
 function toggleMenu() {

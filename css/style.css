@@ -205,3 +205,19 @@ html, body {
   opacity: 1;
 }
 
+.btn-rotacao {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
