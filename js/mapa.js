@@ -1,30 +1,21 @@
+/* ===== MAPA ===== */
+
 const map = L.map('map', {
   zoomControl: false,
   rotate: true,
   touchRotate: true,
-  bearing: 0
+  bearing: 0,
+  zoomAnimation: true,
+  zoomAnimationThreshold: 4,
+  fadeAnimation: true  
 }).setView([-21.9348, -50.5136], 16);
 
-L.control.zoom({
-  position: 'topleft'
-}).addTo(map);
-
+L.control.zoom({ position: 'topleft' }).addTo(map);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
 }).addTo(map);
 
-let rotacionando = false;
-
-map.on('rotatestart', () => {
-  rotacionando = true;
-  ocultarCamadas();
-});
-
-map.on('rotateend', () => {
-  rotacionando = false;
-  mostrarCamadas();
-});
 
 /* ===== ESTILOS ===== */
 
@@ -32,13 +23,6 @@ const estiloPadrao = {
   color: '#0b3c8a',
   weight: 2,
   fillOpacity: 0
-};
-
-const estiloSelecionado = {
-  color: '#22d3ee',
-  weight: 6,
-  fillOpacity: 0.08,
-  fillColor: '#22d3ee'
 };
 
 const estiloCensitario = {
@@ -55,11 +39,10 @@ const ZOOM_ROTULOS_CENSITARIO = 15;
 
 let camadaQuarteiroes;
 let camadaCensitaria;
-let quarteiraoSelecionado = null;
-let censitarioSelecionado = null;
 
 const grupoRotulos = L.layerGroup().addTo(map);
 const grupoRotulosCensitario = L.layerGroup().addTo(map);
+
 
 /* ===== QUARTEIRÕES ===== */
 
@@ -70,8 +53,6 @@ fetch('quarteiroes.geojson')
       style: estiloPadrao,
       onEachFeature: (feature, layer) => {
         const id = feature.properties.id;
-
-        layer.on('click', () => selecionar(layer));
 
         const centro = layer.getBounds().getCenter();
         const rotulo = L.marker(centro, {
@@ -88,6 +69,7 @@ fetch('quarteiroes.geojson')
     atualizarVisibilidadeRotulos();
   });
 
+
 /* ===== SETOR CENSITÁRIO ===== */
 
 fetch('censitario.geojson')
@@ -95,30 +77,148 @@ fetch('censitario.geojson')
   .then(data => {
     camadaCensitaria = L.geoJSON(data, {
       style: estiloCensitario,
-        onEachFeature: (feature, layer) => {
-          if (!feature.properties.CD_GEOCODI) return;
+      onEachFeature: (feature, layer) => {
+        if (!feature.properties.CD_GEOCODI) return;
 
-          const codigoCompleto = String(feature.properties.CD_GEOCODI);
-          const codigo = codigoCompleto.slice(-3);
+        const codigo = String(feature.properties.CD_GEOCODI).slice(-3);
 
-          const centro = layer.getBounds().getCenter();
-          const rotulo = L.marker(centro, {
-            icon: L.divIcon({
-              className: 'rotulo-censitario',
-              html: codigo
-            })
-          });
+        const centro = layer.getBounds().getCenter();
+        const rotulo = L.marker(centro, {
+          icon: L.divIcon({
+            className: 'rotulo-censitario',
+            html: codigo
+          })
+        });
 
-          grupoRotulosCensitario.addLayer(rotulo);
-        }
-
+        grupoRotulosCensitario.addLayer(rotulo);
+      }
     }).addTo(map);
 
     camadaQuarteiroes?.bringToFront();
   });
 
+
+/* ===== RÓTULOS POR ZOOM ===== */
+
+function atualizarVisibilidadeRotulos() {
+  const zoom = map.getZoom();
+
+  if (zoom >= ZOOM_ROTULOS_QUARTEIROES && map.hasLayer(camadaQuarteiroes)) {
+    map.addLayer(grupoRotulos);
+  } else {
+    map.removeLayer(grupoRotulos);
+  }
+
+  if (zoom >= ZOOM_ROTULOS_CENSITARIO && map.hasLayer(camadaCensitaria)) {
+    map.addLayer(grupoRotulosCensitario);
+  } else {
+    map.removeLayer(grupoRotulosCensitario);
+  }
+}
+
+map.on('zoomend', atualizarVisibilidadeRotulos);
+
+
+/* ===== BUSCA ===== */
+
+function buscar() {
+  const tipo = document.querySelector('input[name="tipo-busca"]:checked').value;
+  tipo === 'quarteirao' ? buscarQuarteirao() : buscarCensitario();
+}
+
+function buscarQuarteirao() {
+  const valor = document.getElementById('busca').value.trim();
+  if (!/^\d+$/.test(valor)) {
+    mostrarToast('Digite apenas números');
+    destacarBuscaInvalida();
+    return;
+  }
+
+  let encontrado = false;
+
+  camadaQuarteiroes.eachLayer(layer => {
+    if (layer.feature.properties.id == valor) {
+      map.fitBounds(layer.getBounds(), {
+        padding: [40, 40],
+        maxZoom: 18,
+        animate: true,
+        duration: 0.8,
+        easeLinearity: 0.25
+      });
+      map.setBearing(0);
+      encontrado = true;
+    }
+  });
+
+  if (!encontrado) {
+    mostrarToast('Quarteirão não encontrado');
+    destacarBuscaInvalida();
+  }
+}
+
+function buscarCensitario() {
+  const valor = document.getElementById('busca').value.trim();
+  if (!/^\d+$/.test(valor)) {
+    mostrarToast('Digite apenas números');
+    destacarBuscaInvalida();
+    return;
+  }
+
+  let encontrado = false;
+
+  camadaCensitaria.eachLayer(layer => {
+    const codigo = String(layer.feature.properties.CD_GEOCODI).slice(-3);
+    if (codigo === valor) {
+      map.fitBounds(layer.getBounds(), {
+        padding: [40, 40],
+        maxZoom: 17,
+        animate: true,
+        duration: 0.9,
+        easeLinearity: 0.25
+      });
+      map.setBearing(0);
+      encontrado = true;
+    }
+  });
+
+  if (!encontrado) {
+    mostrarToast('Setor censitário não encontrado');
+    destacarBuscaInvalida();
+  }
+}
+
+
+/* ===== INPUT ===== */
+
+document.getElementById('busca').addEventListener('keydown', e => {
+  if (e.key === 'Enter') buscar();
+});
+
+document.getElementById('busca').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+
+/* ===== ROTACAO – CORREÇÃO MOBILE ===== */
+
+let camadasOcultas = false;
+const container = map.getContainer();
+
+container.addEventListener('touchstart', e => {
+  if (e.touches.length === 2 && !camadasOcultas) {
+    camadasOcultas = true;
+    ocultarCamadas();
+  }
+}, { passive: true });
+
+container.addEventListener('touchend', e => {
+  if (e.touches.length < 2 && camadasOcultas) {
+    camadasOcultas = false;
+    mostrarCamadas();
+  }
+}, { passive: true });
+
 function ocultarCamadas() {
-  document.body.classList.add('rotacionando');
   if (camadaQuarteiroes) map.removeLayer(camadaQuarteiroes);
   if (camadaCensitaria) map.removeLayer(camadaCensitaria);
   map.removeLayer(grupoRotulos);
@@ -126,7 +226,6 @@ function ocultarCamadas() {
 }
 
 function mostrarCamadas() {
-  document.body.classList.remove('rotacionando');
   if (document.getElementById('chk-quarteiroes').checked) {
     map.addLayer(camadaQuarteiroes);
     camadaQuarteiroes?.bringToFront();
@@ -140,281 +239,70 @@ function mostrarCamadas() {
 }
 
 
-/* ===== CONTROLE DE ZOOM DOS RÓTULOS ===== */
+/* ===== BOTÃO ROTACIONAR ===== */
 
-function atualizarVisibilidadeRotulos() {
-  const zoom = map.getZoom();
-
-  // Quarteirões
-  if (
-    zoom >= ZOOM_ROTULOS_QUARTEIROES &&
-    map.hasLayer(camadaQuarteiroes)
-  ) {
-    map.addLayer(grupoRotulos);
-  } else {
-    map.removeLayer(grupoRotulos);
-  }
-
-  // Censitário
-  if (
-    zoom >= ZOOM_ROTULOS_CENSITARIO &&
-    map.hasLayer(camadaCensitaria)
-  ) {
-    map.addLayer(grupoRotulosCensitario);
-  } else {
-    map.removeLayer(grupoRotulosCensitario);
-  }
-}
-
-map.on('zoomend', atualizarVisibilidadeRotulos);
-
-map.on('click', () => {
-  limparSelecaoCensitario();
-
-  if (quarteiraoSelecionado) {
-    quarteiraoSelecionado.setStyle(estiloPadrao);
-    quarteiraoSelecionado = null;
-  }
-});
-
-
-/* ===== FUNÇÕES ===== */
-
-function limparSelecaoCensitario() {
-  if (censitarioSelecionado) {
-    censitarioSelecionado.setStyle(estiloCensitario);
-    censitarioSelecionado = null;
-  }
-}
-
-
-function selecionar(layer) {
-  if (quarteiraoSelecionado) {
-    quarteiraoSelecionado.setStyle(estiloPadrao);
-  }
-  layer.setStyle(estiloSelecionado);
-  quarteiraoSelecionado = layer;
-  map.fitBounds(layer.getBounds());
-  map.setBearing(0);
-}
-
-function buscar() {
-  const tipo = document.querySelector('input[name="tipo-busca"]:checked').value;
-
-  if (tipo === 'quarteirao') {
-    buscarQuarteirao();
-  } else {
-    buscarCensitario();
-  }
-}
-
-function buscarQuarteirao() {
-  const valor = document.getElementById('busca').value.trim();
-  if (!valor) return;
-
-  if (!/^\d+$/.test(valor)) {
-    mostrarToast('Digite apenas o número do quarteirão');
-    destacarBuscaInvalida();
-    return;
-  }
-
-  let encontrado = false;
-
-  camadaQuarteiroes.eachLayer(layer => {
-    if (layer.feature.properties.id == valor) {
-      selecionar(layer);
-      encontrado = true;
-    }
-  });
-
-  if (!encontrado) {
-    mostrarToast('Quarteirão não encontrado');
-    destacarBuscaInvalida();
-  }
-}
-
-
-function buscarCensitario() {
-  const valor = document.getElementById('busca').value.trim();
-  if (!valor) return;
-
-  if (!/^\d+$/.test(valor)) {
-    mostrarToast('Digite apenas números');
-    destacarBuscaInvalida();
-    return;
-  }
-
-  limparSelecaoCensitario();
-
-  let encontrado = false;
-
-  camadaCensitaria.eachLayer(layer => {
-    const codigoCompleto = String(layer.feature.properties.CD_GEOCODI);
-    const codigo = codigoCompleto.slice(-3);
-
-    if (codigo === valor) {
-      layer.setStyle(estiloSelecionado);
-      censitarioSelecionado = layer; // 🔴 agora funciona
-      map.fitBounds(layer.getBounds());
-      encontrado = true;
-    }
-  });
-
-  if (!encontrado) {
-    mostrarToast('Setor censitário não encontrado');
-    destacarBuscaInvalida();
-  }
-}
-
-// Rotacionar
 let anguloAtual = 0;
 
 function rotacionarMapa() {
   anguloAtual += 30;
   if (anguloAtual >= 360) anguloAtual = 0;
-
   map.setBearing(anguloAtual);
 }
 
-document.getElementById('busca').addEventListener('keydown', e => {
-  if (e.key === 'Enter') buscar();
-});
 
-document.getElementById('busca').addEventListener('input', e => {
-  e.target.value = e.target.value.replace(/\D/g, '');
-});
-
-document.querySelectorAll('input[name="tipo-busca"]').forEach(radio => {
-  radio.addEventListener('change', () => {
-    const tipo = document.querySelector('input[name="tipo-busca"]:checked').value;
-    const input = document.getElementById('busca');
-
-    // Limpa campo e placeholder
-    input.value = '';
-    input.placeholder =
-      tipo === 'quarteirao'
-        ? 'Buscar quarteirão'
-        : 'Buscar setor censitário';
-
-    // 🔹 Limpa seleção do censitário
-    limparSelecaoCensitario();
-
-    // 🔹 Limpa seleção do quarteirão
-    if (quarteiraoSelecionado) {
-      quarteiraoSelecionado.setStyle(estiloPadrao);
-      quarteiraoSelecionado = null;
-    }
-  });
-});
-
-
-let marcadorLocalizacao = null;
-
-
-function minhaLocalizacao() {
-  if (!navigator.geolocation) return;
-
-  navigator.geolocation.getCurrentPosition(pos => {
-    const latlng = [pos.coords.latitude, pos.coords.longitude];
-    map.setView(latlng, 18);
-
-    if (marcadorLocalizacao) {
-      marcadorLocalizacao.setLatLng(latlng);
-    } else {
-      marcadorLocalizacao = L.circleMarker(latlng, { radius: 6 }).addTo(map);
-    }
-
-    camadaQuarteiroes.eachLayer(layer => {
-      if (layer.getBounds().contains(latlng)) {
-        selecionar(layer);
-      }
-    });
-  });
-  map.setBearing(0);
-}
+/* ===== MENU ===== */
 
 function toggleMenu() {
   const menu = document.getElementById('menu-opcoes');
   const botao = document.querySelector('.btn-opcoes');
 
   const aberto = menu.classList.toggle('hidden') === false;
-
   botao.classList.toggle('ativo', aberto);
 }
 
 
 function toggleQuarteiroes() {
   const chk = document.getElementById('chk-quarteiroes');
-
-  if (!camadaQuarteiroes) return;
-
-  if (chk.checked) {
-    map.addLayer(camadaQuarteiroes);
-    camadaQuarteiroes?.bringToFront();
-    atualizarVisibilidadeRotulos();
-  } else {
-    map.removeLayer(camadaQuarteiroes);
-    map.removeLayer(grupoRotulos);
-  }
+  chk.checked ? map.addLayer(camadaQuarteiroes) : map.removeLayer(camadaQuarteiroes);
+  atualizarVisibilidadeRotulos();
 }
-
 
 function toggleCensitario() {
   const chk = document.getElementById('chk-censitario');
-
-  if (!camadaCensitaria) return;
-
-  if (chk.checked) {
-    map.addLayer(camadaCensitaria);
-    camadaQuarteiroes?.bringToFront();
-    atualizarVisibilidadeRotulos();
-  } else {
-    map.removeLayer(camadaCensitaria);
-    map.removeLayer(grupoRotulosCensitario);
-  }
+  chk.checked ? map.addLayer(camadaCensitaria) : map.removeLayer(camadaCensitaria);
+  atualizarVisibilidadeRotulos();
 }
-// ===== Cria toast reutilizável =====
+
+
+/* ===== TOAST ===== */
+
 function mostrarToast(mensagem) {
   let toast = document.getElementById('toast');
-
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'toast';
     toast.className = 'toast';
     document.body.appendChild(toast);
   }
-
   toast.textContent = mensagem;
   toast.classList.add('mostrar');
-
-  setTimeout(() => {
-    toast.classList.remove('mostrar');
-  }, 2000);
+  setTimeout(() => toast.classList.remove('mostrar'), 2000);
 }
 
-// ===== FECHAR MENU AO CLICAR FORA =====
+function destacarBuscaInvalida() {
+  const input = document.getElementById('busca');
+  input.classList.add('erro');
+  setTimeout(() => input.classList.remove('erro'), 1500);
+}
 
 document.addEventListener('click', function (e) {
   const menu = document.getElementById('menu-opcoes');
   const botao = document.querySelector('.btn-opcoes');
 
-  // Se o menu estiver fechado, não faz nada
-  if (menu.classList.contains('hidden')) return;
+  if (!menu || menu.classList.contains('hidden')) return;
 
-  // Se clicou dentro do menu ou no botão, não fecha
   if (menu.contains(e.target) || botao.contains(e.target)) return;
 
-  // Caso contrário, fecha o menu
   menu.classList.add('hidden');
   botao.classList.remove('ativo');
 });
-
-function destacarBuscaInvalida() {
-  const input = document.getElementById('busca');
-
-  input.classList.add('erro');
-
-  setTimeout(() => {
-    input.classList.remove('erro');
-  }, 1500);
-}
