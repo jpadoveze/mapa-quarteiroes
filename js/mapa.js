@@ -202,17 +202,25 @@ document.getElementById('busca').addEventListener('input', e => {
 /* ===== ROTACAO – CORREÇÃO MOBILE ===== */
 
 let camadasOcultas = false;
+let timerRotacao = null;
+
 const container = map.getContainer();
 
 container.addEventListener('touchstart', e => {
-  if (e.touches.length === 2 && !camadasOcultas) {
-    camadasOcultas = true;
-    ocultarCamadas();
+  if (e.touches.length === 2) {
+    timerRotacao = setTimeout(() => {
+      if (!camadasOcultas) {
+        camadasOcultas = true;
+        ocultarCamadas();
+      }
+    }, 120); // delay crítico
   }
 }, { passive: true });
 
 container.addEventListener('touchend', e => {
-  if (e.touches.length < 2 && camadasOcultas) {
+  clearTimeout(timerRotacao);
+
+  if (camadasOcultas && e.touches.length < 2) {
     camadasOcultas = false;
     mostrarCamadas();
   }
