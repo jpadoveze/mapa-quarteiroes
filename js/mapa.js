@@ -197,7 +197,7 @@ function rotacionarMapa() {
 
 let marcadorLocalizacao = null;
 
-function localizarUsuario() {
+function minhaLocalizacao() {
   map.locate({
     setView: true,
     maxZoom: 18,
@@ -266,3 +266,4 @@ function erroBusca(msg) {
   input.classList.add('erro');
   setTimeout(() => input.classList.remove('erro'), 1500);
 }
+
