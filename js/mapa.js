@@ -3,7 +3,6 @@
 const map = L.map('map', {
   zoomControl: false,
   rotate: true,
-  touchRotate: false, // ❌ desativado
   bearing: 0,
   zoomAnimation: true,
   zoomAnimationThreshold: 4,
@@ -266,4 +265,3 @@ function erroBusca(msg) {
   input.classList.add('erro');
   setTimeout(() => input.classList.remove('erro'), 1500);
 }
-
